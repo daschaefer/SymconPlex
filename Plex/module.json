@@ -1,0 +1,14 @@
+{
+	"id": "{8584AC07-1099-4ECE-A41F-7473E1AB56AB}",
+	"name": "Plex",
+	"type": 3,
+	"vendor": "",
+	"aliases": 
+	[
+		"Plex"
+	],
+	"parentRequirements": ["{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}"],
+	"childRequirements": [],
+	"implemented": [],
+	"prefix": "PHT"
+}
