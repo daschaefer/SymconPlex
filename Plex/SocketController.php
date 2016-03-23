@@ -33,10 +33,8 @@ function checkMediaClient($ip, $port=3005) {
 function open($socket_id) {
     SetValue(IPS_GetObjectIDByIdent("ClientStatus", IPS_GetParent($_IPS['SELF'])), true);
     SetValue(IPS_GetObjectIDByIdent("ClientPower", IPS_GetParent($_IPS['SELF'])), true);
-    SetValue(IPS_GetObjectIDByIdent("PlayerControls", IPS_GetParent($_IPS['SELF'])), 0);
-
-    // request current status
-    
+    SetValue(IPS_GetObjectIDByIdent("PlayerControls", IPS_GetParent($_IPS['SELF'])), 1);
+    SetValue(IPS_GetObjectIDByIdent("PlayerID", IPS_GetParent($_IPS['SELF'])), 0);
 
     IPS_SetProperty($socket_id, "Open", true);
     IPS_ApplyChanges($socket_id);
@@ -55,7 +53,6 @@ function close($socket_id) {
     SetValue(IPS_GetObjectIDByIdent("Cover", IPS_GetParent($_IPS['SELF'])), "");
     SetValue(IPS_GetObjectIDByIdent("PlayerID", IPS_GetParent($_IPS['SELF'])), -1);
     // SetValue(IPS_GetObjectIDByIdent("ShuffleControls", $_IPS['SELF']), 0);
-    SetValue(IPS_GetObjectIDByIdent("RepeatControls", IPS_GetParent($_IPS['SELF'])), 0);
 }
 
 ?>

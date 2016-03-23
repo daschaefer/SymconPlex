@@ -30,7 +30,7 @@ Die folgenden Funktionalitäten sind implementiert:
   - Linux
   - OSX
   - Rasplex
-- Netzwerkverbindung der Plex Home Theaster Instanz
+- Netzwerkverbindung der Plex Home Theater Instanz
 
 ## 3. Vorbereitung & Installation & Konfiguration
 
@@ -51,7 +51,7 @@ Damit der Plex Home Theater Client über die bereits vorhandene, aber deaktivier
 ```
 - Rasplex
 ```
-/storage/.plexht/temp/userdata/guisettings.xml
+/storage/.plexht/userdata/guisettings.xml
 ```
 
 geöffnet werden und folgender XML Eintrag gesetzt werden (üblicherweise von false auf true):
@@ -60,7 +60,8 @@ geöffnet werden und folgender XML Eintrag gesetzt werden (üblicherweise von fa
 <esallinterfaces>true</esallinterfaces>
 ```
 
-Anschließend muss die Plex Home Theater Applikation neu gestartet werden.
+Anschließend muss die Plex Home Theater Applikation neu gestartet werden! 
+Unter Rasplex muss der Raspberry Pi neugestartet werden!
 
 ### Installation in IPS 4.x
 Im "Module Control" (Kern Instanzen->Modules) die URL "git://github.com/daschaefer/SymconPlex.git" hinzufügen.  
@@ -109,7 +110,7 @@ Ausgeschaltet = Inaktiv
 
 **HTML**
 
-*Geplante HTML Formatierte Ausgabe mit diversen Informationen zum aktuellen Titel.*
+*Geplante HTML Formatierte Ausgabe mit diversen Informationen zum aktuellen Titel. Wird aktuell noch nicht gefüllt!*
 
 **Item**
 
@@ -158,11 +159,23 @@ Wenn eine Plex Instanz erstellt wird, werden zwei Skripte angelegt:
 
 **SocketController**
 
-*Dieses Skript dient dazu den aktuellen Zustand des Plex Home Theaster Clients zu überwachen, und entsprechend den Client Socket zu aktivieren/deaktivieren.
+*Dieses Skript dient dazu den aktuellen Zustand des Plex Home Theater Clients zu überwachen, und entsprechend den Client Socket zu aktivieren/deaktivieren.
 Es wird mit einem Timer versehen, der im Standard jede Sekunde aufgerufen wird. Der Timer kann nach eigenem Ermessen verändert werden, jedoch hat sich ein Intervall von 1s als Optimal herausgestellt.*
 
 ## 6. Funktionen
 
+```php
+PHT_Back(integer $InstanceID)
+```
+Sendet Befehl 'Zurück' an Plex Home Theater Client.
+
+---
+```php
+PHT_Down(integer $InstanceID)
+```
+Sendet Befehl 'Runter' an Plex Home Theater Client.
+
+---
 ```php
 PHT_GetPlayerID(integer $InstanceID)
 ```
@@ -173,6 +186,12 @@ Liefert die aktuelle Player ID.
 PHT_GetSocketID(integer $InstanceID)
 ```
 Liefert die aktuelle ID des zugehörigen Client Sockets.
+
+---
+```php
+PHT_Left(integer $InstanceID)
+```
+Sendet Befehl 'Links' an Plex Home Theater Client.
 
 ---
 ```php
@@ -209,6 +228,36 @@ Sendet ein Wake on LAN (WOL) Befehl an die MAC-Adresse des Plex Home Theater Cli
 PHT_Prev(integer $InstanceID)
 ```
 Springt zum vorherigen Titel.
+
+---
+```php
+PHT_RepeatActualElement(integer $InstanceID)
+```
+Setzt die Wiederholung auf das aktuell abgespielte Element.
+
+---
+```php
+PHT_RepeatAll(integer $InstanceID)
+```
+Setzt die Wiederholung auf die aktuelle Playlist.
+
+---
+```php
+PHT_RepeatOff(integer $InstanceID)
+```
+Wiederholungen ausschalten.
+
+---
+```php
+PHT_Right(integer $InstanceID)
+```
+Sendet Befehl 'Rechts' an Plex Home Theater Client.
+
+---
+```php
+PHT_Select(integer $InstanceID)
+```
+Sendet Befehl 'Auswahl' an Plex Home Theater Client.
 
 ---
 ```php

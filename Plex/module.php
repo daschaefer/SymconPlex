@@ -1,4 +1,5 @@
 <?
+
 if (!defined("PAUSED"))
     define("PAUSED", "Pausiert");
 if (!defined("PLAY"))
@@ -97,14 +98,14 @@ class Plex extends IPSModule
             IPS_SetEventActive($socketCheck, true);
         }
 
-        // Create ClientController script
-        $clientControllerScriptID = @$this->GetIDForIdent("ClientController");
-        if($clientControllerScriptID === false) {
-          $clientControllerScriptID = $this->RegisterScript("ClientController", "ClientController", file_get_contents(__DIR__ . "/ClientController.php"), 100);
-        } else {
-          IPS_SetScriptContent($clientControllerScriptID, file_get_contents(__DIR__ . "/ClientController.php"));
-        }
-        IPS_SetHidden($clientControllerScriptID, true);
+        // // Create ClientController script
+        // $clientControllerScriptID = @$this->GetIDForIdent("ClientController");
+        // if($clientControllerScriptID === false) {
+        //   $clientControllerScriptID = $this->RegisterScript("ClientController", "ClientController", file_get_contents(__DIR__ . "/ClientController.php"), 100);
+        // } else {
+        //   IPS_SetScriptContent($clientControllerScriptID, file_get_contents(__DIR__ . "/ClientController.php"));
+        // }
+        // IPS_SetHidden($clientControllerScriptID, true);
 
         // Create variables
         $coverID = $this->RegisterVariableString("Cover", "Cover");
@@ -116,12 +117,13 @@ class Plex extends IPSModule
         
         $volumeID = $this->RegisterVariableInteger("Volume", "Lautstärke", "PLEX.Volume");
         SetValue($volumeID, 100);
-        IPS_SetVariableCustomAction($volumeID, $clientControllerScriptID);
+        $this->EnableAction("Volume");
         
         $clientStatusID = $this->RegisterVariableBoolean("ClientStatus", "Client Status", "PLEX.ClientStatus");
         IPS_SetHidden($clientStatusID, true);
         
         $playerID = $this->RegisterVariableInteger("PlayerID", "Player ID");
+        SetValue($playerID, -1);
         IPS_SetHidden($playerID, true);
 
         $itemID = $this->RegisterVariableInteger("ItemID", "Item ID");
@@ -131,19 +133,20 @@ class Plex extends IPSModule
         IPS_SetIcon($statusID, "Information");
         
         $controlsID = $this->RegisterVariableInteger("Controls", "Steuerung", "PLEX.Controls");
-        IPS_SetVariableCustomAction($controlsID, $clientControllerScriptID);
+        $this->EnableAction("Controls");
         
         $titleID = $this->RegisterVariableString("Title", "Titel");
         IPS_SetIcon($titleID, "Information");
         
         $playerControlsID = $this->RegisterVariableInteger("PlayerControls", "Wiedergabe Steuerung", "PLEX.PlayerControls");
-        IPS_SetVariableCustomAction($playerControlsID, $clientControllerScriptID);
+        SetValue($playerControlsID, 1);
+        $this->EnableAction("PlayerControls");
         
         $repeatControlsID = $this->RegisterVariableInteger("RepeatControls", "Wiederholung", "PLEX.RepeatControls");
-        IPS_SetVariableCustomAction($repeatControlsID, $clientControllerScriptID);
+        $this->EnableAction("RepeatControls");
         
         $clientPowerID = $this->RegisterVariableBoolean("ClientPower", "Power", "PLEX.ClientPower");
-        IPS_SetVariableCustomAction($clientPowerID, $clientControllerScriptID);
+        $this->EnableAction("ClientPower");
 
         IPS_SetProperty($this->InstanceID, "ClientSocket", @$this->GetParent());
 
@@ -171,6 +174,81 @@ class Plex extends IPSModule
         }
     }
 
+    public function RequestAction($Ident, $Value) 
+    { 
+        switch ($Ident) 
+        { 
+            case "Volume": // volume 
+                $this->SetVolume($Value); 
+            break; 
+            case "PlayerControls": // player control 
+                switch($Value) { 
+                    case 0: // prev 
+                            $this->Prev();     
+                        break; 
+                    case 1: // stop 
+                            $this->Stop(); 
+                        break; 
+                    case 2: // pause 
+                            $this->Pause(); 
+                        break; 
+                    case 3: // play 
+                            $this->Play(); 
+                        break; 
+                    case 4: // next  
+                            $this->Next(); 
+                        break; 
+                } 
+            break; 
+            case "Controls": // movement player control 
+                switch($Value) { 
+                    case 0: // up 
+                        $this->Up(); 
+                        break; 
+                    case 1: // down 
+                        $this->Down(); 
+                        break; 
+                    case 2: // left 
+                        $this->Left(); 
+                        break; 
+                    case 3: // right 
+                        $this->Right(); 
+                        break; 
+                    case 4: // select 
+                        $this->Select(); 
+                        break; 
+                    case 5: // back 
+                        $this->Back(); 
+                        break; 
+                } 
+            break; 
+            case "RepeatControls": // repeat 
+                switch($Value) { 
+                    case 0: // off 
+                        $this->RepeatOff();     
+                        break; 
+                    case 1: // actual element 
+                        $this->RepeatActualElement();         
+                        break; 
+                    case 2: // all 
+                        $this->RepeatAll();     
+                        break; 
+                } 
+            break; 
+            case "ClientPower": // repeat 
+                switch($Value) { 
+                    case true: // Shutdown the whole system 
+                        $this->PowerOff(); 
+                        break; 
+                    case false: // Power on the system 
+                        //wake($client_mac); 
+                        $this->PowerOn(); 
+                        break; 
+                } 
+            break; 
+        } 
+    }
+
     public function ReceiveData($JSONString) {
         $JSON = json_decode($JSONString);
         $JSON = json_decode(utf8_decode($JSON->Buffer));
@@ -188,7 +266,7 @@ class Plex extends IPSModule
 
                     if(isset($JSON->params->data->item)) {
                         $item = $JSON->params->data->item;
-                        $player_id = -1;
+                        $player_id = 0;
                         $item_id = $item->id;
                         switch ($item->type) {
                             case 'episode':
@@ -207,6 +285,9 @@ class Plex extends IPSModule
                                 $properties = '["title", "artist", "albumartist", "year", "genre", "album", "track", "duration", "thumbnail", "disc"]';
                                 $player_id = 0;
                                 break;
+                            default:
+                                $player_id = 0;
+                                break;
                         }
 
                         SetValue($this->GetIDForIdent("ItemID"), $item_id);
@@ -218,9 +299,9 @@ class Plex extends IPSModule
                 case 'Player.OnStop':
                     SetValue($this->GetIDForIdent("Title"), "");
                     SetValue($this->GetIDForIdent("Status"), STOPPED);
-                    SetValue($this->GetIDForIdent("PlayerControls"), 0);
+                    SetValue($this->GetIDForIdent("PlayerControls"), 1);
                     SetValue($this->GetIDForIdent("Cover"), "");
-                    SetValue($this->GetIDForIdent("PlayerID"), -1);
+                    SetValue($this->GetIDForIdent("PlayerID"), 0);
                     SetValue($this->GetIDForIdent("ItemID"), -1);
                     break;
                 case 'Application.OnVolumeChanged':
@@ -253,7 +334,7 @@ class Plex extends IPSModule
                     SetValue($this->GetIDForIdent("Status"), STOPPED);
                     SetValue($this->GetIDForIdent("ClientStatus"), false);
                     SetValue($this->GetIDForIdent("ClientPower"), false);
-                    SetValue($this->GetIDForIdent("PlayerControls"), 0);
+                    SetValue($this->GetIDForIdent("PlayerControls"), 1);
                     SetValue($this->GetIDForIdent("Cover"), "");
                     SetValue($this->GetIDForIdent("PlayerID"), -1);
                     SetValue($this->GetIDForIdent("ItemID"), -1);
@@ -324,58 +405,152 @@ class Plex extends IPSModule
         return GetValue($this->GetIDForIdent("PlayerID"));
     }
 
-    public function Play() {
-        $player_id = $this->GetPlayerID();
-        if($player_id >= 0) {
-            $command = '{"jsonrpc":"2.0","method":"Player.PlayPause","params":{"playerid":'.$player_id.'},"id":1}';
-            $this->Send($command);
-        }
-    }
+    // Play Controls 
+    public function Play() { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Player.PlayPause","params":{"playerid":'.$player_id.'},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
 
-    public function Pause() {
-        $player_id = $this->GetPlayerID();
-        if($player_id >= 0) {
-            $command = '{"jsonrpc":"2.0","method":"Player.PlayPause","params":{"playerid":'.$player_id.'},"id":1}';
-            $this->Send($command);
-        }
-    }
+    public function Pause() { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Player.PlayPause","params":{"playerid":'.$player_id.'},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
 
-    public function Stop() {
-        $player_id = $this->GetPlayerID();
-        if($player_id >= 0) {
-            $command = '{"jsonrpc":"2.0","method":"Player.Stop","params":{"playerid":'.$player_id.'},"id":1}';
-            $this->Send($command);
-        }
-    }
+    public function Stop() { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Player.Stop","params":{"playerid":'.$player_id.'},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
 
-    public function Next() {
-        $player_id = $this->GetPlayerID();
-        if($player_id >= 0) {
-            $command = '{"jsonrpc":"2.0","method":"Player.GoTo","params":{"playerid":'.$player_id.', "to":"next"},"id":1}';
-            $this->Send($command);
-        }
-    }
+    public function Next() { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Player.GoTo","params":{"playerid":'.$player_id.', "to":"next"},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
+     
+    public function Prev() { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Player.GoTo","params":{"playerid":'.$player_id.', "to":"previous"},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
 
-    public function Prev() {
-        $player_id = $this->GetPlayerID();
-        if($player_id >= 0) {
-            $command = '{"jsonrpc":"2.0","method":"Player.GoTo","params":{"playerid":'.$player_id.', "to":"previous"},"id":1}';
-            $this->Send($command);
-        }
-    }
-
+    // Controls 
+    public function Up() 
+    { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Input.Up","params":{},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
+     
+    public function Down() 
+    { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Input.Down","params":{},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
+     
+    public function Left() 
+    { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Input.Left","params":{},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
+     
+    public function Right() 
+    { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Input.Right","params":{},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
+     
+    public function Select() 
+    { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Input.Select","params":{},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
+     
+    public function Back() 
+    { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Input.Back","params":{},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
+     
+    // Repeat 
+    public function RepeatOff() 
+    { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Player.SetRepeat","params":{"playerid":'.$player_id.', "repeat":"off"},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
+     
+    public function RepeatActualElement()
+    { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Player.SetRepeat","params":{"playerid":'.$player_id.', "repeat":"one"},"id":1}'; 
+            $this->Send($command); 
+        } 
+    } 
+     
+    public function RepeatAll() 
+    { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Player.SetRepeat","params":{"playerid":'.$player_id.', "repeat":"all"},"id":1}';
+            $this->Send($command); 
+        } 
+    } 
+     
+    // Volume
     public function SetVolume($level) {
-        $command = '{"jsonrpc":"2.0","method":"Application.SetVolume","params":{"volume": '.$level.'},"id":1}';
-        $this->Send($command);
-    }
+        $currentValue = GetValue($this->GetIDForIdent("Volume"));
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Application.SetVolume","params":{"volume": '.$level.'},"id":1}'; 
+            $this->Send($command); 
+        }
+        else
+            SetValue($this->GetIDForIdent("Volume"), $currentValue);
+    } 
 
-    public function PowerOn() {
-    }
+    // Power
+    public function PowerOn() { 
+        $this->wake($client_mac);
+        $this->Send($command); 
+    } 
 
-    public function PowerOff() {
+    public function PowerOff() { 
         $command = '{"jsonrpc":"2.0","method":"System.Shutdown","params":{},"id":1}';
-        $this->Send($command);
-    }
+        $this->Send($command); 
+    } 
 
     // HELPER FUNCTIONS
     protected function RegisterProfileInteger($Name, $Icon, $Prefix, $Suffix, $MinValue, $MaxValue, $StepSize) {
@@ -446,5 +621,36 @@ class Plex extends IPSModule
         $instance = IPS_GetInstance($this->InstanceID);
         return ($instance['ConnectionID'] > 0) ? $instance['ConnectionID'] : false;
     }
+
+    protected function wake($mac)
+    {
+        $broadcast = "255.255.255.255";
+        $port = 15;
+        $mac = str_replace(":", "", $mac);
+        $nic = fsockopen("udp://" . $broadcast, $port);
+        if($nic)
+        {
+            $packet = "";
+            for($i = 0; $i < 6; $i++)
+                $packet .= chr(0xFF);
+            for($j = 0; $j < 16; $j++)
+            {
+                for($k = 0; $k < 6; $k++)
+                {
+                    $str = substr($mac, $k * 2, 2);
+                    $dec = hexdec($str);
+                    $packet .= chr($dec);
+                }
+            }
+            $ret = fwrite($nic, $packet);
+            fclose($nic);
+            if($ret) {
+                LogMessage("Versuche Gerät '".$mac."' zu wecken!");
+                return true;
+            }
+        }
+        return false;
+    }
 }
+
 ?>
