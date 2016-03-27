@@ -30,12 +30,18 @@ class Plex extends IPSModule
     {
         parent::Create();
         
+        // Public properties
         $this->RegisterPropertyString("ClientIP", "");
         $this->RegisterPropertyInteger("ClientPort", 3005);
         $this->RegisterPropertyString("ClientMAC", "");
         $this->RegisterPropertyString("ServerIP", "");
         $this->RegisterPropertyInteger("ServerPort", 32400);
         $this->RegisterPropertyInteger("ClientSocket", 0);
+        $this->RegisterPropertyString("XPlexToken", "");
+
+        // Private properties
+        $this->RegisterPropertyInteger("ItemID", 0);
+        $this->RegisterPropertyInteger("PlayerID", 0);
 
         $this->RequireParent("{3CFF0FD9-E306-41DB-9B5A-9D06D38576C3}");
     }
@@ -121,13 +127,6 @@ class Plex extends IPSModule
         
         $clientStatusID = $this->RegisterVariableBoolean("ClientStatus", "Client Status", "PLEX.ClientStatus");
         IPS_SetHidden($clientStatusID, true);
-        
-        $playerID = $this->RegisterVariableInteger("PlayerID", "Player ID");
-        SetValue($playerID, -1);
-        IPS_SetHidden($playerID, true);
-
-        $itemID = $this->RegisterVariableInteger("ItemID", "Item ID");
-        IPS_SetHidden($itemID, true);
         
         $statusID = $this->RegisterVariableString("Status", "Status");
         IPS_SetIcon($statusID, "Information");
@@ -290,8 +289,8 @@ class Plex extends IPSModule
                                 break;
                         }
 
-                        SetValue($this->GetIDForIdent("ItemID"), $item_id);
-                        SetValue($this->GetIDForIdent("PlayerID"), $player_id);
+                        IPS_SetProperty($this->InstanceID, "ItemID", $item_id);
+                        IPS_SetProperty($this->InstanceID, "PlayerID", $player_id);
                         if($player_id >= 0)
                             $this->Send('{"jsonrpc":"2.0","method":"Player.GetItem","params":{"playerid":'.$player_id.', "properties": '.$properties.'},"id":1}');
                     }
@@ -300,9 +299,9 @@ class Plex extends IPSModule
                     SetValue($this->GetIDForIdent("Title"), "");
                     SetValue($this->GetIDForIdent("Status"), STOPPED);
                     SetValue($this->GetIDForIdent("PlayerControls"), 1);
-                    SetValue($this->GetIDForIdent("Cover"), "");
-                    SetValue($this->GetIDForIdent("PlayerID"), 0);
-                    SetValue($this->GetIDForIdent("ItemID"), -1);
+                    SetValue($this->GetIDForIdent("Cover"), "");;
+                    IPS_SetProperty($this->InstanceID, "ItemID", -1);
+                    IPS_SetProperty($this->InstanceID, "PlayerID", 0);
                     break;
                 case 'Application.OnVolumeChanged':
                     SetValue($this->GetIDForIdent("Volume"), $JSON->params->data->volume);
@@ -336,8 +335,8 @@ class Plex extends IPSModule
                     SetValue($this->GetIDForIdent("ClientPower"), false);
                     SetValue($this->GetIDForIdent("PlayerControls"), 1);
                     SetValue($this->GetIDForIdent("Cover"), "");
-                    SetValue($this->GetIDForIdent("PlayerID"), -1);
-                    SetValue($this->GetIDForIdent("ItemID"), -1);
+                    IPS_SetProperty($this->InstanceID, "ItemID", -1);
+                    IPS_SetProperty($this->InstanceID, "PlayerID", -1);
                 default:
                     break;
             }
@@ -348,15 +347,17 @@ class Plex extends IPSModule
             if(isset($result->item)) {
                 $item = $result->item;
                 $title = "";
-                $player_id = @GetValue($this->GetIDForIdent("PlayerID"));
-                $item_id = @GetValue($this->GetIDForIdent("ItemID"));
-                // print_r($item);
+                $player_id = @IPS_GetProperty($this->InstanceID, "PlayerID");
+                $item_id = @IPS_GetProperty($this->InstanceID, "ItemID");
 
                 // cover
                 if(isset($item->thumbnail) && strlen($item->thumbnail) > 0 && strlen($this->ReadPropertyString("ServerIP")) > 0) {
                     $tmp = explode("url=", urldecode(urldecode($item->thumbnail)));
                     $url = $tmp[1];
                     $url = str_replace("127.0.0.1", $this->ReadPropertyString("ServerIP"), $url);
+                    if(strlen(IPS_GetProperty($this->InstanceID, "XPlexToken")) > 0) {
+                        $url .= "?X-Plex-Token=".IPS_GetProperty($this->InstanceID, "XPlexToken");
+                    }
                     $cover_bindata = "<img class='plex_cover' src='".$url."'>";
                     SetValue($this->GetIDForIdent("Cover"), $cover_bindata);
                 } else {
@@ -364,7 +365,7 @@ class Plex extends IPSModule
                 }
 
                 // titel zusammenbauen
-                if(isset($item->artist) && strlen($item->artist) > 0) {
+                if(isset($item->artist) && count($item->artist) > 0) {
                     $title = $item->artist[0]." - ";
                 }
                 if(isset($item->showtitle) && strlen($item->showtitle) > 0) {
@@ -402,7 +403,7 @@ class Plex extends IPSModule
     }
 
     public function GetPlayerID() {
-        return GetValue($this->GetIDForIdent("PlayerID"));
+        return IPS_GetProperty($this->InstanceID, "PlayerID");
     }
 
     // Play Controls 
@@ -551,6 +552,8 @@ class Plex extends IPSModule
         $command = '{"jsonrpc":"2.0","method":"System.Shutdown","params":{},"id":1}';
         $this->Send($command); 
     } 
+
+    // SOCKET FUNCTIONS TBD
 
     // HELPER FUNCTIONS
     protected function RegisterProfileInteger($Name, $Icon, $Prefix, $Suffix, $MinValue, $MaxValue, $StepSize) {

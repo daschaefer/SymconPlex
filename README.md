@@ -95,6 +95,10 @@ Dieser Client Socket wird hier automatisch verlinkt und muss in der Regel nicht 
 *Der Port über den die Kommunikation mit dem Plex Media Server stattfindet.
 Automatisch vorbelegt ist `32400` und muss in der Regel nicht angepasst werden.*
 
+**X-Plex Token:**
+
+*Diese Einstellung ist Optional. Falls Plex Home aktiviert ist, wird zur Verfizierung der Datenkommunikation der X-Plex Token verwendet. Anderenfalls können erweiterte Informationen wie z.B. das Cover des aktuellen Titels nicht geladen werden.*
+
 ## 4. Variablen
 **Client Status**
 

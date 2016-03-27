@@ -6,6 +6,7 @@
         { "name": "ClientMAC",               "type": "ValidationTextBox", "caption": "Client MAC-Adresse" },
         { "name": "ClientSocket",            "type": "SelectObject", "caption": "Client Socket" },
         { "name": "ServerIP",                "type": "ValidationTextBox", "caption": "Server IP-Adresse" },
-        { "name": "ServerPort",              "type": "NumberSpinner", "caption": "Server Port" }
+        { "name": "ServerPort",              "type": "NumberSpinner", "caption": "Server Port" },
+        { "name": "XPlexToken",              "type": "ValidationTextBox", "caption": "X-Plex Token" }
 	]
 }
