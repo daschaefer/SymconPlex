@@ -2,7 +2,7 @@
 	"id": "{8D3923A0-B06E-4447-9319-45E721A694EF}",
 	"author": "Daniel Schäfer",
 	"name": "Plex Module",
-	"url": "https://git.schaefer2.de/symconplex.git",
+	"url": "https://github.com/daschaefer/SymconPlex.git",
 	"version": "1.5",
 	"build": 0,
 	"date": 0
