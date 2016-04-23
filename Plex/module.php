@@ -42,6 +42,7 @@ class Plex extends IPSModule
         // Private properties
         $this->RegisterPropertyInteger("ItemID", 0);
         $this->RegisterPropertyInteger("PlayerID", 0);
+        $this->RegisterPropertyInteger("PageRptCount", 3);
 
         $this->RequireParent("{3CFF0FD9-E306-41DB-9B5A-9D06D38576C3}");
     }
@@ -52,12 +53,14 @@ class Plex extends IPSModule
 
         // Start create profiles
         $this->RegisterProfileIntegerEx("PLEX.Controls", "Move", "", "",         Array(
+                                                                                            Array(-1, "Zurück", "", -1),
                                                                                             Array(0, "Hoch", "", -1),
                                                                                             Array(1, "Runter", "", -1),
                                                                                             Array(2, "Links", "", -1),
                                                                                             Array(3, "Rechts", "", -1),
-                                                                                            Array(4, "Auswahl", "", -1),
-                                                                                            Array(5, "Zurück", "", -1)
+                                                                                            Array(4, "Seite +", "", -1),
+                                                                                            Array(5, "Seite -", "", -1),
+                                                                                            Array(10, "Auswahl", "", -1),
                                                                                             ));
 
         $this->RegisterProfileIntegerEx("PLEX.PlayerControls", "Script", "", "",   Array(  
@@ -89,9 +92,9 @@ class Plex extends IPSModule
         // Create SocketController script
         $socketControllerScriptID = @$this->GetIDForIdent("SocketController");
         if($socketControllerScriptID === false) {
-          $socketControllerScriptID = $this->RegisterScript("SocketController", "SocketController", file_get_contents(__DIR__ . "/SocketController.php"), 100);
+            $socketControllerScriptID = $this->RegisterScript("SocketController", "SocketController", file_get_contents(__DIR__ . "/SocketController.php"), 100);
         } else {
-          IPS_SetScriptContent($socketControllerScriptID, file_get_contents(__DIR__ . "/SocketController.php"));
+            IPS_SetScriptContent($socketControllerScriptID, file_get_contents(__DIR__ . "/SocketController.php"));
         }
         IPS_SetHidden($socketControllerScriptID, true);
         
@@ -104,19 +107,23 @@ class Plex extends IPSModule
             IPS_SetEventActive($socketCheck, true);
         }
 
-        // // Create ClientController script
-        // $clientControllerScriptID = @$this->GetIDForIdent("ClientController");
-        // if($clientControllerScriptID === false) {
-        //   $clientControllerScriptID = $this->RegisterScript("ClientController", "ClientController", file_get_contents(__DIR__ . "/ClientController.php"), 100);
-        // } else {
-        //   IPS_SetScriptContent($clientControllerScriptID, file_get_contents(__DIR__ . "/ClientController.php"));
-        // }
-        // IPS_SetHidden($clientControllerScriptID, true);
-
         // Create variables
-        $coverID = $this->RegisterVariableString("Cover", "Cover");
-        IPS_SetVariableCustomProfile($coverID, "~HTMLBox");
-        IPS_SetIcon($coverID, "Image");
+        $coverID = @$this->GetIDForIdent("Cover");
+        
+        if($coverID != false && IPS_GetObject($coverID)['ObjectType'] != 5) { // migrate from variable to media
+            if(IPS_DeleteVariable($coverID))
+                $coverID = false;
+        }
+        if($coverID == false) {
+            $coverID = IPS_CreateMedia(1);
+            IPS_SetIdent($coverID, "Cover");
+            IPS_SetName($coverID, "Cover");
+            IPS_SetIcon($coverID, "Image");
+            IPS_SetParent($coverID, $this->InstanceID);
+            IPS_SetMediaFile($coverID, "Transparent.png", false);
+            IPS_SetMediaContent($coverID, "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==");
+            IPS_SendMediaEvent($coverID);
+        }
         
         $HTMLID = $this->RegisterVariableString("HTML", "HTML");
         IPS_SetVariableCustomProfile($HTMLID, "~HTMLBox");
@@ -133,6 +140,7 @@ class Plex extends IPSModule
         
         $controlsID = $this->RegisterVariableInteger("Controls", "Steuerung", "PLEX.Controls");
         $this->EnableAction("Controls");
+        SetValue($controlsID, -1);
         
         $titleID = $this->RegisterVariableString("Title", "Titel");
         IPS_SetIcon($titleID, "Information");
@@ -176,76 +184,99 @@ class Plex extends IPSModule
     public function RequestAction($Ident, $Value) 
     { 
         switch ($Ident) 
-        { 
-            case "Volume": // volume 
-                $this->SetVolume($Value); 
+        {
+            case "Volume": // volume
+                if(IPS_GetProperty($this->GetParent(), "Open")) 
+                    $this->SetVolume($Value);
             break; 
             case "PlayerControls": // player control 
                 switch($Value) { 
-                    case 0: // prev 
+                    case 0: // prev
+                        if(IPS_GetProperty($this->GetParent(), "Open"))
                             $this->Prev();     
                         break; 
-                    case 1: // stop 
+                    case 1: // stop
+                        if(IPS_GetProperty($this->GetParent(), "Open")) 
                             $this->Stop(); 
                         break; 
-                    case 2: // pause 
+                    case 2: // pause
+                        if(IPS_GetProperty($this->GetParent(), "Open")) 
                             $this->Pause(); 
                         break; 
-                    case 3: // play 
+                    case 3: // play
+                        if(IPS_GetProperty($this->GetParent(), "Open")) 
                             $this->Play(); 
                         break; 
-                    case 4: // next  
+                    case 4: // next
+                        if(IPS_GetProperty($this->GetParent(), "Open"))  
                             $this->Next(); 
                         break; 
                 } 
             break; 
             case "Controls": // movement player control 
                 switch($Value) { 
-                    case 0: // up 
-                        $this->Up(); 
+                    case -1: // Back
+                        if(IPS_GetProperty($this->GetParent(), "Open"))
+                            $this->Back(); 
+                        break;
+                    case 0: // up
+                        if(IPS_GetProperty($this->GetParent(), "Open")) 
+                            $this->Up(); 
                         break; 
-                    case 1: // down 
-                        $this->Down(); 
+                    case 1: // down
+                        if(IPS_GetProperty($this->GetParent(), "Open")) 
+                            $this->Down(); 
                         break; 
-                    case 2: // left 
-                        $this->Left(); 
+                    case 2: // left
+                        if(IPS_GetProperty($this->GetParent(), "Open")) 
+                            $this->Left(); 
                         break; 
-                    case 3: // right 
-                        $this->Right(); 
+                    case 3: // right
+                        if(IPS_GetProperty($this->GetParent(), "Open")) 
+                            $this->Right(); 
                         break; 
-                    case 4: // select 
-                        $this->Select(); 
+                    case 4: // page up
+                        if(IPS_GetProperty($this->GetParent(), "Open")) 
+                            $this->PgUp(); 
+                        break;
+                    case 5: // page down
+                        if(IPS_GetProperty($this->GetParent(), "Open")) 
+                            $this->PgDown(); 
                         break; 
-                    case 5: // back 
-                        $this->Back(); 
+                    case 10: // select
+                        if(IPS_GetProperty($this->GetParent(), "Open")) 
+                            $this->Select(); 
                         break; 
                 } 
             break; 
             case "RepeatControls": // repeat 
                 switch($Value) { 
-                    case 0: // off 
-                        $this->RepeatOff();     
+                    case 0: // off
+                        if(IPS_GetProperty($this->GetParent(), "Open"))
+                            $this->RepeatOff();     
                         break; 
-                    case 1: // actual element 
-                        $this->RepeatActualElement();         
+                    case 1: // actual element
+                        if(IPS_GetProperty($this->GetParent(), "Open")) 
+                            $this->RepeatActualElement();         
                         break; 
-                    case 2: // all 
-                        $this->RepeatAll();     
+                    case 2: // all
+                        if(IPS_GetProperty($this->GetParent(), "Open")) 
+                            $this->RepeatAll();     
                         break; 
                 } 
             break; 
             case "ClientPower": // repeat 
                 switch($Value) { 
-                    case true: // Shutdown the whole system 
-                        $this->PowerOff(); 
+                    case false: // Shutdown the whole system
+                        if(IPS_GetProperty($this->GetParent(), "Open"))
+                            $this->PowerOff(); 
                         break; 
-                    case false: // Power on the system 
-                        //wake($client_mac); 
+                    case true: // Power on the system
                         $this->PowerOn(); 
                         break; 
                 } 
             break; 
-        } 
+        }
     }
 
     public function ReceiveData($JSONString) {
@@ -299,7 +330,11 @@ class Plex extends IPSModule
                     SetValue($this->GetIDForIdent("Title"), "");
                     SetValue($this->GetIDForIdent("Status"), STOPPED);
                     SetValue($this->GetIDForIdent("PlayerControls"), 1);
-                    SetValue($this->GetIDForIdent("Cover"), "");;
+                    
+                    IPS_SetMediaFile($this->GetIDForIdent("Cover"), "Transparent.png", false);
+                    IPS_SetMediaContent($this->GetIDForIdent("Cover"), "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==");
+                    IPS_SendMediaEvent($this->GetIDForIdent("Cover"));
+                    
                     IPS_SetProperty($this->InstanceID, "ItemID", -1);
                     IPS_SetProperty($this->InstanceID, "PlayerID", 0);
                     break;
@@ -334,7 +369,11 @@ class Plex extends IPSModule
                     SetValue($this->GetIDForIdent("ClientStatus"), false);
                     SetValue($this->GetIDForIdent("ClientPower"), false);
                     SetValue($this->GetIDForIdent("PlayerControls"), 1);
-                    SetValue($this->GetIDForIdent("Cover"), "");
+                    
+                    IPS_SetMediaFile($this->GetIDForIdent("Cover"), "Transparent.png", false);
+                    IPS_SetMediaContent($this->GetIDForIdent("Cover"), "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==");
+                    IPS_SendMediaEvent($this->GetIDForIdent("Cover"));
+                    
                     IPS_SetProperty($this->InstanceID, "ItemID", -1);
                     IPS_SetProperty($this->InstanceID, "PlayerID", -1);
                 default:
@@ -358,10 +397,16 @@ class Plex extends IPSModule
                     if(strlen(IPS_GetProperty($this->InstanceID, "XPlexToken")) > 0) {
                         $url .= "?X-Plex-Token=".IPS_GetProperty($this->InstanceID, "XPlexToken");
                     }
-                    $cover_bindata = "<img class='plex_cover' src='".$url."'>";
-                    SetValue($this->GetIDForIdent("Cover"), $cover_bindata);
+                    
+                    $coverHTML = "<img class='plex_cover' src='".$url."'>";
+                    
+                    $imageBindata =  base64_encode(file_get_contents($url));
+                    IPS_SetMediaContent($this->GetIDForIdent("Cover"), $imageBindata);
+                    IPS_SendMediaEvent($this->GetIDForIdent("Cover"));
                 } else {
-                    SetValue($this->GetIDForIdent("Cover"), "");
+                    IPS_SetMediaFile($this->GetIDForIdent("Cover"), "Transparent.png", false);
+                    IPS_SetMediaContent($this->GetIDForIdent("Cover"), "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==");
+                    IPS_SendMediaEvent($this->GetIDForIdent("Cover"));
                 }
 
                 // titel zusammenbauen
@@ -456,6 +501,15 @@ class Plex extends IPSModule
             $this->Send($command); 
         } 
     } 
+    
+    public function PgUp() 
+    { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) { 
+            $command = '{"jsonrpc":"2.0","method":"Input.ExecuteAction","params":{"action":"pageup"},"id":1}'; 
+            $this->Send($command); 
+        } 
+    }
      
     public function Down() 
     { 
@@ -463,6 +517,15 @@ class Plex extends IPSModule
         if($player_id >= 0) { 
             $command = '{"jsonrpc":"2.0","method":"Input.Down","params":{},"id":1}'; 
             $this->Send($command); 
+        } 
+    } 
+    
+    public function PgDown() 
+    { 
+        $player_id = $this->GetPlayerID(); 
+        if($player_id >= 0) {         
+            $command = '{"jsonrpc":"2.0","method":"Input.ExecuteAction","params":{"action":"pagedown"},"id":1}'; 
+            $this->Send($command);
         } 
     } 
      
@@ -508,7 +571,7 @@ class Plex extends IPSModule
         $player_id = $this->GetPlayerID(); 
         if($player_id >= 0) { 
             $command = '{"jsonrpc":"2.0","method":"Player.SetRepeat","params":{"playerid":'.$player_id.', "repeat":"off"},"id":1}'; 
-            $this->Send($command); 
+            $this->Send($command);
         } 
     } 
      
@@ -519,7 +582,7 @@ class Plex extends IPSModule
             $command = '{"jsonrpc":"2.0","method":"Player.SetRepeat","params":{"playerid":'.$player_id.', "repeat":"one"},"id":1}'; 
             $this->Send($command); 
         } 
-    } 
+    }
      
     public function RepeatAll() 
     { 
@@ -543,9 +606,18 @@ class Plex extends IPSModule
     } 
 
     // Power
-    public function PowerOn() { 
-        $this->wake($client_mac);
-        $this->Send($command); 
+    public function PowerOn() {
+        $ip = "";
+        $ip_arr = explode(".", gethostbyname(IPS_GetProperty($this->InstanceID, "ClientIP")));
+        for ($i=0; $i < count($ip_arr)-1; $i++) { 
+            $ip .= $ip_arr[$i].".";
+        }
+        $ip .= "255";
+        
+        $mac = IPS_GetProperty($this->InstanceID, "ClientMAC");
+        if(strlen($mac) > 0) {
+            $this->wake($ip, $mac);
+        }
     } 
 
     public function PowerOff() { 
@@ -625,34 +697,29 @@ class Plex extends IPSModule
         return ($instance['ConnectionID'] > 0) ? $instance['ConnectionID'] : false;
     }
 
-    protected function wake($mac)
+ 
+    protected function wake($ip, $mac)
     {
-        $broadcast = "255.255.255.255";
-        $port = 15;
-        $mac = str_replace(":", "", $mac);
-        $nic = fsockopen("udp://" . $broadcast, $port);
-        if($nic)
+        if(strstr($mac, "-") !== false)
+            $addr_byte = explode('-', $mac);
+        else if(strstr($mac, ":") !== false)
+            $addr_byte = explode(':', $mac); 
+        
+        $hw_addr = '';
+        
+        for ($a=0; $a < 6; $a++) $hw_addr .= chr(hexdec($addr_byte[$a]));
+        
+        $msg = chr(255).chr(255).chr(255).chr(255).chr(255).chr(255);
+        
+        for ($a = 1; $a <= 16; $a++) $msg .= $hw_addr;
+        
+        $s = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        if ($s != false)
         {
-            $packet = "";
-            for($i = 0; $i < 6; $i++)
-                $packet .= chr(0xFF);
-            for($j = 0; $j < 16; $j++)
-            {
-                for($k = 0; $k < 6; $k++)
-                {
-                    $str = substr($mac, $k * 2, 2);
-                    $dec = hexdec($str);
-                    $packet .= chr($dec);
-                }
-            }
-            $ret = fwrite($nic, $packet);
-            fclose($nic);
-            if($ret) {
-                LogMessage("Versuche Gerät '".$mac."' zu wecken!");
-                return true;
-            }
+            $opt_ret = socket_set_option($s, 1, 6, TRUE);
+            $e = socket_sendto($s, $msg, strlen($msg), 0, $ip, 2050);
+            socket_close($s);
         }
-        return false;
     }
 }
 

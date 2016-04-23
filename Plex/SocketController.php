@@ -50,9 +50,14 @@ function close($socket_id) {
 
     SetValue(IPS_GetObjectIDByIdent("Title", IPS_GetParent($_IPS['SELF'])), "");
     SetValue(IPS_GetObjectIDByIdent("Status", IPS_GetParent($_IPS['SELF'])), "");
-    SetValue(IPS_GetObjectIDByIdent("Cover", IPS_GetParent($_IPS['SELF'])), "");
-    IPS_SetProperty(IPS_GetParent($_IPS['SELF']), "PlayerID", -1);
+    
+    IPS_SetMediaFile(IPS_GetObjectIDByIdent("Cover", IPS_GetParent($_IPS['SELF'])), "Transparent.png", false);
+    IPS_SetMediaContent(IPS_GetObjectIDByIdent("Cover", IPS_GetParent($_IPS['SELF'])), "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==");
+    IPS_SendMediaEvent(IPS_GetObjectIDByIdent("Cover", IPS_GetParent($_IPS['SELF'])));
+    
     // SetValue(IPS_GetObjectIDByIdent("ShuffleControls", $_IPS['SELF']), 0);
+    
+    IPS_SetProperty(IPS_GetParent($_IPS['SELF']), "PlayerID", -1);
 }
 
 ?>

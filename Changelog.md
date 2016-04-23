@@ -1,4 +1,9 @@
 # Changelog 
+### Version 1.6
+- **Bugfix:** Wake On LAN
+- **Feature:** Steuerung erweitert durch Seite +/- zum schnellen navigieren durch die Mediathek
+- **Change:** Cover wird nun als Medienobjekt abgelegt
+	
 ### Version 1.5
 - **Bugfix:** Fehlermeldung von PC Oldie https://www.symcon.de/forum/threads/31140-Plex-Home-Theater-Modul?p=288579#post288579
 - **Feature:** X-Plex Token hinzugefügt und URL Aufrufe an Plex Media Server angepasst

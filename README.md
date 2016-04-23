@@ -140,7 +140,7 @@ Der aktuelle Status des Clients:
 
 **Steuerung**
 
-*Buttons zur Steuerung (Hoch, Runter, Links, Rechts, Auswahl, Zurück) auf der Clientoberfläche.*
+*Buttons zur Steuerung (Hoch, Runter, Links, Rechts, Seite +, Seite -, Auswahl, Zurück) auf der Clientoberfläche.*
 
 **Titel**
 
@@ -155,11 +155,7 @@ Der aktuell gespielte Titel.
 *Buttons zur Steuerung der Repeat Funktion.*
 
 ## 5. Hintergrund Skripte
-Wenn eine Plex Instanz erstellt wird, werden zwei Skripte angelegt:
-
-**ClientController**
-
-*Dieses Skript dient dazu Steuerbefehle an den Plex Home Theater Client zu senden.*
+Wenn eine Plex Instanz erstellt wird, wird folgendes Skript angelegt:
 
 **SocketController**
 
@@ -208,6 +204,18 @@ Springt zum nächsten Titel.
 PHT_Pause(integer $InstanceID)
 ```
 Pausiert die Wiedergabe.
+
+---
+```php
+PHT_PgDown(integer $InstanceID)
+```
+Sendet Befehl 'Seite Runter' an Plex Home Theater Client. (Zum einfachen blättern innerhalb der Bibliothek)
+
+---
+```php
+PHT_PgUp(integer $InstanceID)
+```
+Sendet Befehl 'Seite Hoch' an Plex Home Theater Client. (Zum einfachen blättern innerhalb der Bibliothek)
 
 ---
 ```php

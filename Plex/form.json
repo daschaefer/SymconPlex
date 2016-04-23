@@ -2,11 +2,11 @@
 	"elements":
 	[
 		{ "name": "ClientIP",                "type": "ValidationTextBox", "caption": "Client IP-Adresse" },
-        { "name": "ClientPort",              "type": "NumberSpinner", "caption": "Client Port" },
-        { "name": "ClientMAC",               "type": "ValidationTextBox", "caption": "Client MAC-Adresse" },
-        { "name": "ClientSocket",            "type": "SelectObject", "caption": "Client Socket" },
-        { "name": "ServerIP",                "type": "ValidationTextBox", "caption": "Server IP-Adresse" },
-        { "name": "ServerPort",              "type": "NumberSpinner", "caption": "Server Port" },
-        { "name": "XPlexToken",              "type": "ValidationTextBox", "caption": "X-Plex Token" }
+                { "name": "ClientPort",              "type": "NumberSpinner", "caption": "Client Port" },
+                { "name": "ClientMAC",               "type": "ValidationTextBox", "caption": "Client MAC-Adresse" },
+                { "name": "ClientSocket",            "type": "SelectObject", "caption": "Client Socket" },
+                { "name": "ServerIP",                "type": "ValidationTextBox", "caption": "Server IP-Adresse" },
+                { "name": "ServerPort",              "type": "NumberSpinner", "caption": "Server Port" },
+                { "name": "XPlexToken",              "type": "ValidationTextBox", "caption": "X-Plex Token" }
 	]
 }
