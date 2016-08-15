@@ -109,7 +109,6 @@ class Plex extends IPSModule
 
         // Create variables
         $coverID = @$this->GetIDForIdent("Cover");
-        
         if($coverID != false && IPS_GetObject($coverID)['ObjectType'] != 5) { // migrate from variable to media
             if(IPS_DeleteVariable($coverID))
                 $coverID = false;
@@ -124,7 +123,11 @@ class Plex extends IPSModule
             IPS_SetMediaContent($coverID, "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==");
             IPS_SendMediaEvent($coverID);
         }
-        
+
+        $coverHTMLID = $this->RegisterVariableString("CoverHTML", "Cover HTML");
+        IPS_SetVariableCustomProfile($coverHTMLID, "~HTMLBox");
+        IPS_SetIcon($coverHTMLID, "Image");
+
         $HTMLID = $this->RegisterVariableString("HTML", "HTML");
         IPS_SetVariableCustomProfile($HTMLID, "~HTMLBox");
         
@@ -265,7 +268,7 @@ class Plex extends IPSModule
                         break; 
                 } 
             break; 
-            case "ClientPower": // repeat 
+            case "ClientPower": // power 
                 switch($Value) { 
                     case false: // Shutdown the whole system
                         if(IPS_GetProperty($this->GetParent(), "Open"))
@@ -334,6 +337,8 @@ class Plex extends IPSModule
                     IPS_SetMediaFile($this->GetIDForIdent("Cover"), "Transparent.png", false);
                     IPS_SetMediaContent($this->GetIDForIdent("Cover"), "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==");
                     IPS_SendMediaEvent($this->GetIDForIdent("Cover"));
+
+                    SetValue($this->GetIDForIdent("CoverHTML"), "");
                     
                     IPS_SetProperty($this->InstanceID, "ItemID", -1);
                     IPS_SetProperty($this->InstanceID, "PlayerID", 0);
@@ -373,6 +378,8 @@ class Plex extends IPSModule
                     IPS_SetMediaFile($this->GetIDForIdent("Cover"), "Transparent.png", false);
                     IPS_SetMediaContent($this->GetIDForIdent("Cover"), "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==");
                     IPS_SendMediaEvent($this->GetIDForIdent("Cover"));
+
+                    SetValue($this->GetIDForIdent("CoverHTML"), "");
                     
                     IPS_SetProperty($this->InstanceID, "ItemID", -1);
                     IPS_SetProperty($this->InstanceID, "PlayerID", -1);
@@ -388,27 +395,7 @@ class Plex extends IPSModule
                 $title = "";
                 $player_id = @IPS_GetProperty($this->InstanceID, "PlayerID");
                 $item_id = @IPS_GetProperty($this->InstanceID, "ItemID");
-
-                // cover
-                if(isset($item->thumbnail) && strlen($item->thumbnail) > 0 && strlen($this->ReadPropertyString("ServerIP")) > 0) {
-                    $tmp = explode("url=", urldecode(urldecode($item->thumbnail)));
-                    $url = $tmp[1];
-                    $url = str_replace("127.0.0.1", $this->ReadPropertyString("ServerIP"), $url);
-                    if(strlen(IPS_GetProperty($this->InstanceID, "XPlexToken")) > 0) {
-                        $url .= "?X-Plex-Token=".IPS_GetProperty($this->InstanceID, "XPlexToken");
-                    }
-                    
-                    $coverHTML = "<img class='plex_cover' src='".$url."'>";
-                    
-                    $imageBindata =  base64_encode(file_get_contents($url));
-                    IPS_SetMediaContent($this->GetIDForIdent("Cover"), $imageBindata);
-                    IPS_SendMediaEvent($this->GetIDForIdent("Cover"));
-                } else {
-                    IPS_SetMediaFile($this->GetIDForIdent("Cover"), "Transparent.png", false);
-                    IPS_SetMediaContent($this->GetIDForIdent("Cover"), "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==");
-                    IPS_SendMediaEvent($this->GetIDForIdent("Cover"));
-                }
-
+                
                 // titel zusammenbauen
                 if(isset($item->artist) && count($item->artist) > 0) {
                     $title = $item->artist[0]." - ";
@@ -428,6 +415,30 @@ class Plex extends IPSModule
                 }
 
                 SetValue($this->GetIDForIdent("Title"), $title);
+
+                // cover
+                if(isset($item->thumbnail) && strlen($item->thumbnail) > 0 && strlen($this->ReadPropertyString("ServerIP")) > 0) {
+                    $tmp = explode("url=", urldecode(urldecode($item->thumbnail)));
+                    $url = $tmp[1];
+                    $url = str_replace("127.0.0.1", $this->ReadPropertyString("ServerIP"), $url);
+                    if(strlen(IPS_GetProperty($this->InstanceID, "XPlexToken")) > 0) {
+                        $url .= "?X-Plex-Token=".IPS_GetProperty($this->InstanceID, "XPlexToken");
+                    }
+                    
+                    $coverHTML = "<img style='height:100%; width:100%' src='".$url."'>";
+                    SetValue($this->GetIDForIdent("CoverHTML"), $coverHTML);
+                    
+                    $imageBindata =  base64_encode(file_get_contents($url));
+                    IPS_SetMediaFile($this->GetIDForIdent("Cover"), md5($title).".jpg", false);
+                    IPS_SetMediaContent($this->GetIDForIdent("Cover"), $imageBindata);
+                    IPS_SendMediaEvent($this->GetIDForIdent("Cover"));
+                } else {
+                    IPS_SetMediaFile($this->GetIDForIdent("Cover"), "Transparent.png", false);
+                    IPS_SetMediaContent($this->GetIDForIdent("Cover"), "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/C/HgAGgwJ/lK3Q6wAAAABJRU5ErkJggg==");
+                    IPS_SendMediaEvent($this->GetIDForIdent("Cover"));
+
+                    SetValue($this->GetIDForIdent("CoverHTML"), "");
+                }
             }
         }
     }
@@ -499,7 +510,8 @@ class Plex extends IPSModule
         if($player_id >= 0) { 
             $command = '{"jsonrpc":"2.0","method":"Input.Up","params":{},"id":1}'; 
             $this->Send($command); 
-        } 
+        }
+        SetValue($this->GetIDForIdent("Controls"), -99); 
     } 
     
     public function PgUp() 
@@ -508,7 +520,8 @@ class Plex extends IPSModule
         if($player_id >= 0) { 
             $command = '{"jsonrpc":"2.0","method":"Input.ExecuteAction","params":{"action":"pageup"},"id":1}'; 
             $this->Send($command); 
-        } 
+        }
+        SetValue($this->GetIDForIdent("Controls"), -99);
     }
      
     public function Down() 
@@ -517,7 +530,8 @@ class Plex extends IPSModule
         if($player_id >= 0) { 
             $command = '{"jsonrpc":"2.0","method":"Input.Down","params":{},"id":1}'; 
             $this->Send($command); 
-        } 
+        }
+        SetValue($this->GetIDForIdent("Controls"), -99); 
     } 
     
     public function PgDown() 
@@ -527,6 +541,7 @@ class Plex extends IPSModule
             $command = '{"jsonrpc":"2.0","method":"Input.ExecuteAction","params":{"action":"pagedown"},"id":1}'; 
             $this->Send($command);
         } 
+        SetValue($this->GetIDForIdent("Controls"), -99);
     } 
      
     public function Left() 
@@ -536,6 +551,7 @@ class Plex extends IPSModule
             $command = '{"jsonrpc":"2.0","method":"Input.Left","params":{},"id":1}'; 
             $this->Send($command); 
         } 
+        SetValue($this->GetIDForIdent("Controls"), -99);
     } 
      
     public function Right() 
@@ -545,6 +561,7 @@ class Plex extends IPSModule
             $command = '{"jsonrpc":"2.0","method":"Input.Right","params":{},"id":1}'; 
             $this->Send($command); 
         } 
+        SetValue($this->GetIDForIdent("Controls"), -99);
     } 
      
     public function Select() 
@@ -554,6 +571,7 @@ class Plex extends IPSModule
             $command = '{"jsonrpc":"2.0","method":"Input.Select","params":{},"id":1}'; 
             $this->Send($command); 
         } 
+        SetValue($this->GetIDForIdent("Controls"), -99);
     } 
      
     public function Back() 
@@ -563,6 +581,7 @@ class Plex extends IPSModule
             $command = '{"jsonrpc":"2.0","method":"Input.Back","params":{},"id":1}'; 
             $this->Send($command); 
         } 
+        SetValue($this->GetIDForIdent("Controls"), -99);
     } 
      
     // Repeat 
@@ -616,7 +635,7 @@ class Plex extends IPSModule
         
         $mac = IPS_GetProperty($this->InstanceID, "ClientMAC");
         if(strlen($mac) > 0) {
-            $this->wake($ip, $mac);
+            @$this->plex_wake($ip, $mac);
         }
     } 
 
@@ -698,7 +717,7 @@ class Plex extends IPSModule
     }
 
  
-    protected function wake($ip, $mac)
+    protected function plex_wake($ip, $mac)
     {
         if(strstr($mac, "-") !== false)
             $addr_byte = explode('-', $mac);

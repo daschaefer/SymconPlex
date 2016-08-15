@@ -1,4 +1,8 @@
-# Changelog 
+# Changelog
+### Version 1.7
+- **Bugfix:** Coverproblem bei mehreren Instanzen
+- **Feature:** HTML Ausgabe für Cover und Titelinformationen 
+
 ### Version 1.6
 - **Bugfix:** Wake On LAN
 - **Feature:** Steuerung erweitert durch Seite +/- zum schnellen navigieren durch die Mediathek
