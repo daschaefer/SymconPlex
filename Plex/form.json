@@ -9,4 +9,5 @@
                 { "name": "ServerPort",              "type": "NumberSpinner", "caption": "Server Port" },
                 { "name": "XPlexToken",              "type": "ValidationTextBox", "caption": "X-Plex Token" }
 	]
+
 }

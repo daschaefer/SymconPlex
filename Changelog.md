@@ -1,4 +1,7 @@
 # Changelog
+### Version 1.8
+- **Bugfix:** Modulkompatibilität mit IP-Symcon Version 4.1 sichergestellt.
+
 ### Version 1.7
 - **Bugfix:** Coverproblem bei mehreren Instanzen
 - **Feature:** HTML Ausgabe für Cover und Titelinformationen 
